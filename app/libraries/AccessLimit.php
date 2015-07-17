@@ -25,9 +25,10 @@ class AccessLimit {
      */
 
     public function check() {
+
         $ip         = $this->_ci->input->ip_address();
-        $last_check = $this->_ci->redis_model->getlimit($this->_redis_pre.$ip,'check_time');
-        $allowance  = $this->_ci->redis_model->getlimit($this->_redis_pre.$ip,'allow_times');
+        $last_check = $this->_ci->redis_model->getLimit($this->_redis_pre.$ip,'check_time');
+        $allowance  = $this->_ci->redis_model->getLimit($this->_redis_pre.$ip,'allow_times');
 
         if(!isset($allowance)){
             $allowance = $this->_rate;
@@ -40,18 +41,20 @@ class AccessLimit {
         $current = time();
         $time_passed = $current - $last_check;
         $last_check = $current;
+
         $allowance += $time_passed * ($this->_rate / $this->_time);
 
         if ($allowance > $this->_rate){
             $allowance = $this->_rate;
         }
 
+
         if ($allowance < 1.0) {
             return FALSE;
         }
 
         $allowance -= 1.0;
-        $this->_ci->redis_model->setlimit($ip,['check_time'=>$last_check,'allow_times'=>$allowance]);
+        $this->_ci->redis_model->setLimit($this->_redis_pre.$ip,['check_time'=>$last_check,'allow_times'=>$allowance]);
 
         return TRUE;
     }

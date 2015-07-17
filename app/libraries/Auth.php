@@ -31,7 +31,7 @@ class Auth {
         }
         $token = $this->_ci->input->request_headers()['Token'];
         if( isset($token)){
-            $token_value = $this->redis_model->getToken($this->_redis_pre.$token);
+            $token_value = $this->_ci->redis_model->getToken($this->_redis_pre.$token);
             if($token_value){
                 return true;
             }

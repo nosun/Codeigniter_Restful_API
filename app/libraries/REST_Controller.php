@@ -918,31 +918,4 @@ abstract class REST_Controller extends CI_Controller {
         return FALSE;
     }
 
-
-
-    /**
-     * check if the signature is right?
-     * @access protected
-     * @return bool
-     */
-
-    protected function _signature_check(){
-        $header = $this->input->request_headers();
-        $token = isset($header['Token'])?$header['Token']:'';
-        $signature = isset($header['Signature'])?$header['Signature']:'';
-        if($signature == ''){
-            return FALSE;
-        }
-        $parameter = $token;
-        for($i = 2;$this->uri->segment("$i") != ''; $i++){
-            $parameter = $parameter.$this->uri->segment("$i");
-        }
-        $path = md5(md5($parameter).$this->config->item('rest_signature_key'));
-        if($signature != $path){
-            return FALSE;
-        }
-        return TRUE;
-    }
-
-
 }

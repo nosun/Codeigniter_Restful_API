@@ -101,7 +101,7 @@ $config['auth_check_enable']= TRUE;
 | Api method which is public, without token auth.
 |
 */
-$config['auth_']= ['index_get'];
+$config['auth_pass']= ['index_get'];
 
 /*
 |--------------------------------------------------------------------------
@@ -171,10 +171,12 @@ $config['rest_ip_blacklist'] = '123.456.789.0, 987.654.32.1';
 */
 
 $config['limits_check_enable'] = TRUE;
-$config['limits_rate'] = 100;
-$config['limits_time'] = 60;
+$config['limits_rate'] = 5;
+$config['limits_time'] = 8;
 $config['limits_cache'] = 'redis';
 $config['limits_model'] = 'redis_model';
 $config['limits_pre'] = 'limit_';
+
+$config['auth_pre'] = 'token_';
 
 

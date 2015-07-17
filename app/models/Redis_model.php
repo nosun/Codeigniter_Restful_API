@@ -52,7 +52,7 @@ class Redis_Model  extends CI_Model {
     }
 
     public function getToken($key){
-        $this->redis->get($key);
+        return $this->redis->get($key);
     }
 
 }
