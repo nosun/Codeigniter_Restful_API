@@ -23,29 +23,6 @@ class Api_v1 extends REST_Controller
         }
     }
 
-    // 签名校验
-    protected function _basic_check(){
-
-    }
-
-    // 登录校验
-    protected function _auth_check(){
-
-
-    }
-
-    // 访问速率校验
-
-    protected function _limit_check(){
-
-
-    }
-
-
-
-
-
-
     //检查用户是否存在，true 表示存在
     function login_id_get()
     {

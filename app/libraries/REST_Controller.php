@@ -7,10 +7,10 @@
  * @package         CodeIgniter
  * @subpackage      Libraries
  * @category        Libraries
- * @author          Phil Sturgeon, Chris Kacerguis
+ * @author          Phil Sturgeon, Chris Kacerguis, nosun
  * @license         MIT
- * @link            https://github.com/chriskacerguis/codeigniter-restserver
- * @version         3.0.0
+ * @link            https://github.com/nosun/Codeigniter_Restful_API
+ * @version         1.0
  */
 
 abstract class REST_Controller extends CI_Controller {
@@ -34,7 +34,7 @@ abstract class REST_Controller extends CI_Controller {
      *
      * @var array
      */
-    protected $allowed_http_methods = ['get', 'delete', 'post', 'put'];
+    protected $allowed_http_methods = ['get', 'delete', 'post', 'put', 'options', 'patch', 'head'];
 
     /**
      * Contains details about the request
@@ -45,7 +45,7 @@ abstract class REST_Controller extends CI_Controller {
      */
     protected $request = NULL;
 
-        /**
+    /**
      * Contains details about the response
      * Fields: format, lang
      * Note: This is a dynamic object (stdClass)
@@ -160,11 +160,11 @@ abstract class REST_Controller extends CI_Controller {
      * @var array
      */
     protected $_supported_formats = [
-            'json'  => 'application/json',
-            'jsonp' => 'application/javascript',
-            'serialized' => 'application/vnd.php.serialized',
-            'xml'  => 'application/xml'
-        ];
+        'json'  => 'application/json',
+        'jsonp' => 'application/javascript',
+        'serialized' => 'application/vnd.php.serialized',
+        'xml'  => 'application/xml'
+    ];
 
     /**
      * Information about the current API user
@@ -196,6 +196,10 @@ abstract class REST_Controller extends CI_Controller {
     {
         parent::__construct();
 
+        // Disable XML Entity (security vulnerability)
+
+        libxml_disable_entity_loader(TRUE);
+
         // Set the default value of global xss filtering. Same approach as CodeIgniter 3
         $this->_enable_xss = ($this->config->item('global_xss_filtering') === TRUE);
 
@@ -215,10 +219,10 @@ abstract class REST_Controller extends CI_Controller {
 
         $this->_zlib_oc = @ini_get('zlib.output_compression');
 
-        // @toDo Check to see if the current IP address is blacklisted
-        if ($this->config->item('rest_ip_blacklist_enabled') === TRUE)
-        {
-            $this->_check_blacklist_auth();
+        if ($this->config->item('rest_ip_blacklist_enabled') === TRUE) {
+            if ($this->_check_blacklist_auth() === TRUE) {
+                $this->response([$this->config->item('rest_message_field_name') => 402], 200);
+            }
         }
 
         // Determine whether the connection is HTTPS
@@ -228,8 +232,7 @@ abstract class REST_Controller extends CI_Controller {
         $this->request->method = $this->_detect_method();
 
         // Create an argument container if it doesn't exist e.g. _get_args
-        if (isset($this->{'_' . $this->request->method . '_args'}) === FALSE)
-        {
+        if (isset($this->{'_' . $this->request->method . '_args'}) === FALSE) {
             $this->{'_' . $this->request->method . '_args'} = [];
         }
 
@@ -238,7 +241,6 @@ abstract class REST_Controller extends CI_Controller {
 
         // Try to find a format for the request (means we have a request body)
         $this->request->format = $this->_detect_input_format();
-        //var_dump($this->request->format);
 
         // Not all methods have a body attached with them
         $this->request->body = NULL;
@@ -246,8 +248,7 @@ abstract class REST_Controller extends CI_Controller {
         $this->{'_parse_' . $this->request->method}();
 
         // Now we know all about our request, let's try and parse the body if it exists
-        if ($this->request->format && $this->request->body)
-        {
+        if ($this->request->format && $this->request->body) {
             $this->request->body = $this->format->factory($this->request->body, $this->request->format)->to_array();
             // Assign payload arguments to proper method container
             $this->{'_' . $this->request->method . '_args'} = $this->request->body;
@@ -265,30 +266,30 @@ abstract class REST_Controller extends CI_Controller {
             $this->{'_' . $this->request->method . '_args'}
         );
 
-        // Which format should the data be returned in? // in config
+        // Which format should the data be response // in config
         $this->response->format = $this->config->item('rest_default_format');
 
-        // Load DB if its enabled
-        if ($this->config->item('rest_database_group') && ($this->config->item('rest_enable_keys') || $this->config->item('rest_enable_logging')))
-        {
-            $this->rest->db = $this->load->database($this->config->item('rest_database_group'), TRUE);
+        // check signature , if the request accord to the rule of signature
+        if ($this->config->item('signature_enable') === TRUE){
+            if ($this->_signature_check() === FALSE) {
+                $this->response([$this->config->item('rest_message_field_name') => 400], 200);
+            }
         }
-        elseif (property_exists($this, 'db'))
-        {
-            $this->rest->db = $this->db;
-        }
-
-        // Extend this function to apply additional checking on in the process
-        $this->_basic_check();
-
         // check auth
-        $this->_auth_check();
+
+        // check auth ,if the user has ability to access the api resource
+        if ($this->config->item('rest_auth_enable') === TRUE){
+            if($this->_auth_check() === FALSE){
+                $this->response([$this->config->item('rest_message_field_name') => 401], 200);
+            }
+        }
 
         // check limit by ip, if over limit, response 429  too many request;
-        if($this->_limit_check() === false){
-            $this->response([$this->config->item('rest_message_field_name') => 429], 200);
-        };
-
+        if ($this->config->item('rest_limits_enable') === TRUE) {
+            if ($this->_limit_check() === FALSE) {
+                $this->response([$this->config->item('rest_message_field_name') => 429], 200);
+            };
+        }
     }
 
     /**
@@ -396,7 +397,7 @@ abstract class REST_Controller extends CI_Controller {
             {
                 //Set the format header
                 header('Content-Type: ' . $this->_supported_formats[$this->response->format]
-                       . '; charset=' . strtolower($this->config->item('charset')));
+                    . '; charset=' . strtolower($this->config->item('charset')));
 
                 $output = $this->format->factory($data)->{'to_' . $this->response->format}();
 
@@ -448,7 +449,6 @@ abstract class REST_Controller extends CI_Controller {
         {
             exit($output);
         }
-
 
         echo($output);
         ob_end_flush();
@@ -525,6 +525,20 @@ abstract class REST_Controller extends CI_Controller {
 
     // parse http method args -------------------------------------------------------
 
+    /**
+     * Parse the HEAD request arguments
+     *
+     * @access protected
+     * @return void
+     */
+    protected function _parse_head()
+    {
+        // Parse the HEAD variables
+        parse_str(parse_url($this->input->server('REQUEST_URI'), PHP_URL_QUERY), $head);
+
+        // Merge both the URI segments and HEAD params
+        $this->_head_args = array_merge($this->_head_args, $head);
+    }
     /**
      * Parse the GET request arguments
      *
@@ -617,7 +631,67 @@ abstract class REST_Controller extends CI_Controller {
         }
     }
 
+
+    /**
+     * Parse the OPTIONS request arguments
+     *
+     * @access protected
+     * @return void
+     */
+    protected function _parse_options()
+    {
+        // Parse the OPTIONS variables
+        parse_str(parse_url($this->input->server('REQUEST_URI'), PHP_URL_QUERY), $options);
+
+        // Merge both the URI segments and OPTIONS params
+        $this->_options_args = array_merge($this->_options_args, $options);
+    }
+
+    /**
+     * Parse the PATCH request arguments
+     *
+     * @access protected
+     * @return void
+     */
+    protected function _parse_patch()
+    {
+        // It might be a HTTP body
+        if ($this->request->format)
+        {
+            $this->request->body = $this->input->raw_input_stream;
+        }
+        else
+        {
+            // If no filetype is provided, then there are probably just arguments
+            if ($this->input->method() === 'patch')
+            {
+                $this->_patch_args = $this->input->input_stream();
+            }
+        }
+    }
+
     // INPUT FUNCTION --------------------------------------------------------------
+
+    /**
+     * Retrieve a value from a HEAD request
+     *
+     * @access public
+     *
+     * @param NULL $key Key to retrieve from the HEAD request
+     * If NULL an array of arguments is returned
+     * @param NULL $xss_clean Whether to apply XSS filtering
+     *
+     * @return array|string|FALSE Value from the HEAD request; otherwise, FALSE
+     */
+    public function head($key = NULL, $xss_clean = NULL)
+    {
+        if ($key === NULL)
+        {
+            return $this->head_args;
+        }
+
+        return array_key_exists($key, $this->head_args) ? $this->_xss_clean($this->head_args[$key], $xss_clean) : FALSE;
+    }
 
     /**
      * Retrieve a value from a GET request
@@ -704,6 +778,48 @@ abstract class REST_Controller extends CI_Controller {
     }
 
     /**
+     * Retrieve a value from a PATCH request
+     *
+     * @access public
+     *
+     * @param NULL $key Key to retrieve from the PATCH request
+     * If NULL an array of arguments is returned
+     * @param NULL $xss_clean Whether to apply XSS filtering
+     *
+     * @return array|string|FALSE Value from the PATCH request; otherwise, FALSE
+     */
+    public function patch($key = NULL, $xss_clean = NULL)
+    {
+        if ($key === NULL)
+        {
+            return $this->_patch_args;
+        }
+
+        return array_key_exists($key, $this->_patch_args) ? $this->_xss_clean($this->_patch_args[$key], $xss_clean) : FALSE;
+    }
+
+    /**
+     * Retrieve a value from a OPTIONS request
+     *
+     * @access public
+     *
+     * @param NULL $key Key to retrieve from the OPTIONS request.
+     * If NULL an array of arguments is returned
+     * @param NULL $xss_clean Whether to apply XSS filtering
+     *
+     * @return array|string|FALSE Value from the OPTIONS request; otherwise, FALSE
+     */
+    public function options($key = NULL, $xss_clean = NULL)
+    {
+        if ($key === NULL)
+        {
+            return $this->_options_args;
+        }
+
+        return array_key_exists($key, $this->_options_args) ? $this->_xss_clean($this->_options_args[$key], $xss_clean) : FALSE;
+    }
+
+    /**
      * Sanitizes data so that Cross Site Scripting Hacks can be
      * prevented.
      *
@@ -742,29 +858,32 @@ abstract class REST_Controller extends CI_Controller {
      *
      * @access protected
      */
+
     protected function _check_blacklist_auth()
     {
-        // Match an ip address in a blacklist e.g. 127.0.0.0, 0.0.0.0
-        $pattern = sprintf('/(?:,\s*|^)\Q%s\E(?=,\s*|$)/m', $this->input->ip_address());
+        $blacklist = explode(',', $this->config->item('rest_ip_blacklist'));
 
-        // Returns 1, 0 or FALSE (on error only). Therefore implicitly convert 1 to TRUE
-        if (preg_match($pattern, $this->config->item('rest_ip_blacklist')))
+        foreach ($blacklist AS &$ip)
         {
-            // Display an error response
-            $this->response(
-                [
-                    'status' => FALSE,
-                    'error' => 'IP Denied'
-                ],
-                401);
+            $ip = trim($ip);
         }
+
+        if (in_array($this->input->ip_address(), $blacklist) === TRUE)
+        {
+            return TRUE;
+        }
+
+        return FALSE;
     }
+
 
     /**
      * Check if the client's ip is in the 'rest_ip_whitelist' config and generates a 401 response
      *
      * @access protected
+     * @return bool
      */
+
     protected function _check_whitelist_auth()
     {
         $whitelist = explode(',', $this->config->item('rest_ip_whitelist'));
@@ -776,10 +895,12 @@ abstract class REST_Controller extends CI_Controller {
             $ip = trim($ip);
         }
 
-        if (in_array($this->input->ip_address(), $whitelist) === FALSE)
+        if (in_array($this->input->ip_address(), $whitelist) === TRUE)
         {
-            $this->response([$this->config->item('rest_status_field_name') => FALSE, $this->config->item('rest_message_field_name') => 'IP not authorized'], 401);
+            return TRUE;
         }
+
+        return FALSE;
     }
 
 
@@ -789,10 +910,30 @@ abstract class REST_Controller extends CI_Controller {
      *
      * 访问是否合法，比如访问签名是否合法
      * @access protected
+     * @return bool
      */
 
-    protected function _basic_check(){
-
+    protected function _signature_check(){
+        if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
+            if($this->_check_whitelist_auth() === TRUE){
+                return TRUE;
+            }
+        }
+        $header = $this->input->request_headers();
+        $token = isset($header['token'])?$header['token']:'';
+        $signature = isset($header['signature'])?$header['signature']:'';
+        if($signature == ''){
+            return FALSE;
+        }
+        $parameter = $token;
+        for($i = 2;$this->uri->segment("$i") != ''; $i++){
+            $parameter = $parameter.$this->uri->segment("$i");
+        }
+        $path = md5(md5($parameter).$this->config->item('rest_signature_key'));
+        if($signature != $path){
+            return FALSE;
+        }
+        return TRUE;
     }
 
     /**
@@ -803,9 +944,22 @@ abstract class REST_Controller extends CI_Controller {
      * @access protected
      * @return bool
      */
-     protected function _auth_check() {
+    protected function _auth_check() {
 
-     }
+        $method = $_SERVER['REQUEST_METHOD'];
+        $arr = $this->uri->segment('3');
+        if(in_array($arr.'_'.$method,$this->config->item('auth_pass'))){
+            return TRUE;
+        }
+        $header = $this->input->request_headers();
+        $token = isset($header['token'])?$header['token']:'';
+        $token_value = $this->redis_model->getToken($token);
+        if($token_value == FALSE){
+            return FALSE;
+        }
+        return TRUE;
+
+    }
 
     /**
      * Limit override check
@@ -816,42 +970,47 @@ abstract class REST_Controller extends CI_Controller {
      * @return bool
      */
 
-     protected function _limit_check() {
-         $rate = $this->config->item('rest_limits_rate'); // unit: messages
-         $per  = $this->config->item('rest_limits_time'); // unit: seconds
+    protected function _limit_check() {
+        if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
+            if($this->_check_whitelist_auth() === TRUE){
+                return TRUE;
+            }
+        }
+        $rate = $this->config->item('rest_limits_rate'); // unit: messages
+        $per  = $this->config->item('rest_limits_time'); // unit: seconds
 
-         $ip = $this->input->ip_address();
-         $this->load->model($this->config->item('rest_limits_model'));
-         $cache_pre = $this->config->item('rest_limits_pre');
+        $ip = $this->input->ip_address();
+        $this->load->model($this->config->item('rest_limits_model'));
+        $cache_pre = $this->config->item('rest_limits_pre');
 
-         $last_check = $this->redis_model->getlimit($cache_pre.$ip,'check_time');
-         $allowance  = $this->redis_model->getlimit($cache_pre.$ip,'allow_times');
+        $last_check = $this->redis_model->getlimit($cache_pre.$ip,'check_time');
+        $allowance  = $this->redis_model->getlimit($cache_pre.$ip,'allow_times');
 
-         if(!isset($allowance)){
-             $allowance = $rate;
-         }
+        if(!isset($allowance)){
+            $allowance = $rate;
+        }
 
-         if(!isset($last_check)){
-             $last_check = time();
-         }
+        if(!isset($last_check)){
+            $last_check = time();
+        }
 
-         $current = time();
-         $time_passed = $current - $last_check;
-         $last_check = $current;
-         $allowance += $time_passed * ($rate / $per);
+        $current = time();
+        $time_passed = $current - $last_check;
+        $last_check = $current;
+        $allowance += $time_passed * ($rate / $per);
 
-         if ($allowance > $rate){
-             $allowance = $rate;
-         }
+        if ($allowance > $rate){
+            $allowance = $rate;
+        }
 
-         if ($allowance < 1.0) {
-             return FALSE;
-         }
+        if ($allowance < 1.0) {
+            return FALSE;
+        }
 
-         $allowance -= 1.0;
-         $this->redis_model->setlimit($ip,['check_time'=>$last_check,'allow_times'=>$allowance]);
+        $allowance -= 1.0;
+        $this->redis_model->setlimit($ip,['check_time'=>$last_check,'allow_times'=>$allowance]);
 
-         return TRUE;
-     }
+        return TRUE;
+    }
 
 }
