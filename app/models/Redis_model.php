@@ -46,7 +46,7 @@ class Redis_Model  extends CI_Model {
     public function getLimit($key,$field){
         return $this->redis->hget($key,$field);
     }
-
+    
     public function setToken($key,$value){
         $this->redis->set($key,$value);
     }
