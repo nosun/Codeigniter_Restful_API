@@ -920,8 +920,8 @@ abstract class REST_Controller extends CI_Controller {
             }
         }
         $header = $this->input->request_headers();
-        $token = isset($header['token'])?$header['token']:'';
-        $signature = isset($header['signature'])?$header['signature']:'';
+        $token = isset($header['Token'])?$header['Token']:'';
+        $signature = isset($header['Signature'])?$header['Signature']:'';
         if($signature == ''){
             return FALSE;
         }
@@ -952,7 +952,7 @@ abstract class REST_Controller extends CI_Controller {
             return TRUE;
         }
         $header = $this->input->request_headers();
-        $token = isset($header['token'])?$header['token']:'';
+        $token = isset($header['Token'])?$header['Token']:'';
         $token_value = $this->redis_model->getToken($token);
         if($token_value == FALSE){
             return FALSE;
