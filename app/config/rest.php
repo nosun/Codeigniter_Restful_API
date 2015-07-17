@@ -73,8 +73,8 @@ $config['enable_emulate_request'] = TRUE;
 |
 */
 
-$config['signature_enable'] = TRUE;
-$config['rest_signature_key'] = 'skyware';
+$config['signature_check_enable'] = TRUE;
+$config['signature_key'] = 'skyware';
 
 /*
 |--------------------------------------------------------------------------
@@ -92,8 +92,6 @@ $config['rest_signature_key'] = 'skyware';
 */
 
 $config['auth_check_enable']= TRUE;
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -172,11 +170,11 @@ $config['rest_ip_blacklist'] = '123.456.789.0, 987.654.32.1';
 |
 */
 
-$config['rest_limits_enable'] = TRUE;
-$config['rest_limits_rate'] = 100;
-$config['rest_limits_time'] = 60;
-$config['rest_limits_cache'] = 'redis';
-$config['rest_limits_model'] = 'redis_model';
-$config['rest_limits_pre'] = 'limit_';
+$config['limits_check_enable'] = TRUE;
+$config['limits_rate'] = 100;
+$config['limits_time'] = 60;
+$config['limits_cache'] = 'redis';
+$config['limits_model'] = 'redis_model';
+$config['limits_pre'] = 'limit_';
 
 

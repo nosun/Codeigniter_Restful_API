@@ -270,25 +270,40 @@ abstract class REST_Controller extends CI_Controller {
         $this->response->format = $this->config->item('rest_default_format');
 
         // check signature , if the request accord to the rule of signature
-        if ($this->config->item('signature_enable') === TRUE){
-            if ($this->_signature_check() === FALSE) {
+        if ($this->config->item('signature_check_enable') === TRUE){
+            if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
+                if($this->_check_whitelist_auth() === TRUE){
+                    return TRUE;
+                }
+            }
+            $this->load->library('Signature');
+            $auth = new Signature();
+            if ($auth->Check() === FALSE) {
                 $this->response([$this->config->item('rest_message_field_name') => 400], 200);
             }
         }
-        // check auth
 
         // check auth ,if the user has ability to access the api resource
-        if ($this->config->item('rest_auth_enable') === TRUE){
-            if($this->_auth_check() === FALSE){
+        if ($this->config->item('auth_check_enable') === TRUE){
+            $this->load->library('Auth');
+            $auth = new Auth();
+            if($auth->Check() === FALSE){
                 $this->response([$this->config->item('rest_message_field_name') => 401], 200);
             }
         }
 
         // check limit by ip, if over limit, response 429  too many request;
-        if ($this->config->item('rest_limits_enable') === TRUE) {
-            if ($this->_limit_check() === FALSE) {
+        if ($this->config->item('limits_check_enable') === TRUE) {
+            if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
+                if($this->_check_whitelist_auth() === TRUE){
+                    return TRUE;
+                }
+            }
+            $this->load->library('AccessLimit');
+            $auth = new AccessLimit();
+            if ($auth->Check() === FALSE) {
                 $this->response([$this->config->item('rest_message_field_name') => 429], 200);
-            };
+            }
         }
     }
 
@@ -906,22 +921,15 @@ abstract class REST_Controller extends CI_Controller {
 
 
     /**
-     * Extend this function to apply additional checking early on in the process
-     *
-     * 访问是否合法，比如访问签名是否合法
+     * check if the signature is right?
      * @access protected
      * @return bool
      */
 
     protected function _signature_check(){
-        if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
-            if($this->_check_whitelist_auth() === TRUE){
-                return TRUE;
-            }
-        }
         $header = $this->input->request_headers();
-        $token = isset($header['token'])?$header['token']:'';
-        $signature = isset($header['signature'])?$header['signature']:'';
+        $token = isset($header['Token'])?$header['Token']:'';
+        $signature = isset($header['Signature'])?$header['Signature']:'';
         if($signature == ''){
             return FALSE;
         }
@@ -952,12 +960,13 @@ abstract class REST_Controller extends CI_Controller {
             return TRUE;
         }
         $header = $this->input->request_headers();
-        $token = isset($header['token'])?$header['token']:'';
-        $token_value = $this->redis_model->getToken($token);
-        if($token_value == FALSE){
-            return FALSE;
+        if( isset($header['Token'])){
+            $token_value = $this->redis_model->getToken($header['Token']);
+            if($token_value){
+                return true;
+            }
         }
-        return TRUE;
+        return false;
 
     }
 
@@ -971,17 +980,12 @@ abstract class REST_Controller extends CI_Controller {
      */
 
     protected function _limit_check() {
-        if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
-            if($this->_check_whitelist_auth() === TRUE){
-                return TRUE;
-            }
-        }
-        $rate = $this->config->item('rest_limits_rate'); // unit: messages
-        $per  = $this->config->item('rest_limits_time'); // unit: seconds
+        $rate = $this->config->item('limits_rate'); // unit: messages
+        $per  = $this->config->item('limits_time'); // unit: seconds
 
         $ip = $this->input->ip_address();
-        $this->load->model($this->config->item('rest_limits_model'));
-        $cache_pre = $this->config->item('rest_limits_pre');
+        $this->load->model($this->config->item('limits_model'));
+        $cache_pre = $this->config->item('limits_pre');
 
         $last_check = $this->redis_model->getlimit($cache_pre.$ip,'check_time');
         $allowance  = $this->redis_model->getlimit($cache_pre.$ip,'allow_times');

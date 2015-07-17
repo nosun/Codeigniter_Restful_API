@@ -9,17 +9,10 @@ class Api_v1 extends REST_Controller
 	function __construct()
     {
         parent::__construct('rest');
-        log_message('info', 'INIT ');
-        $this->load->helper('encrypt');
-        $this->key=$this->config->item('aes_key');
-        if($this->post('token')){
-            $this->token=$this->post('token');
-        }elseif($this->put('token')){
-            $this->token=$this->put('token');
-        }elseif($this->delete('token')){
-            $this->token=$this->delete('token');
-        }else{
-            $this->token='';
+        $header = $this->input->request_headers();
+        $this->load->model('redis_model');
+        if(isset($header['Token'])) {
+            $this->user_id = $this->redis_model->getToken($header['Token']);
         }
     }
 
