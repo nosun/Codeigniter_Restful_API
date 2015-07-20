@@ -132,7 +132,7 @@ $config['rest_ip_whitelist_enabled'] = TRUE;
 |
 */
 
-$config['rest_ip_whitelist'] = '127.0.0.1,0.0.0.0';
+$config['rest_ip_whitelist'] = '0.0.0.0';
 
 /*
 |--------------------------------------------------------------------------
@@ -157,7 +157,7 @@ $config['rest_ip_blacklist_enabled'] = TRUE;
 | e.g: '123.456.789.0, 987.654.32.1'
 |
 */
-$config['rest_ip_blacklist'] = '123.456.789.0, 987.654.32.1';
+$config['rest_ip_blacklist'] = '987.654.32.1';
 
 
 /*
@@ -178,5 +178,7 @@ $config['limits_model'] = 'redis_model';
 $config['limits_pre'] = 'limit_';
 
 $config['auth_pre'] = 'token_';
+
+$config['check_class'] = ['Auth','Limit'];
 
 

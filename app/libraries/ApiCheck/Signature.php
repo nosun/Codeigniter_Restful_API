@@ -1,10 +1,11 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Signature {
+class Signature  implements CheckInterFace{
 
     private $_salt;
     private $_ci;
     private $_header;
+    private $_error = 400;
 
     public function __construct(){
         $this->_ci      = get_instance();
@@ -12,7 +13,7 @@ class Signature {
         $this->_header  = $this->_ci->input->request_headers();
     }
 
-    public function Check(){
+    public function doCheck(){
         $signature = isset($this->_header['signature'])?$this->_header['signature']:'';
 
         if($signature == ''){
@@ -24,6 +25,14 @@ class Signature {
             return FALSE;
         }
         return TRUE;
+    }
+
+    public function setError($error){
+        $this->_error = $error;
+    }
+
+    public function getError(){
+        return $this->_error;
     }
 
     protected function generate(){

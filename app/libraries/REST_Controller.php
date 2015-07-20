@@ -219,12 +219,6 @@ abstract class REST_Controller extends CI_Controller {
 
         $this->_zlib_oc = @ini_get('zlib.output_compression');
 
-        if ($this->config->item('rest_ip_blacklist_enabled') === TRUE) {
-            if ($this->_check_blacklist_auth() === TRUE) {
-                $this->response([$this->config->item('rest_message_field_name') => 402], 200);
-            }
-        }
-
         // Determine whether the connection is HTTPS
         $this->request->ssl = is_https();
 
@@ -269,42 +263,15 @@ abstract class REST_Controller extends CI_Controller {
         // Which format should the data be response // in config
         $this->response->format = $this->config->item('rest_default_format');
 
-        // check signature , if the request accord to the rule of signature
-        if ($this->config->item('signature_check_enable') === TRUE){
-            if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
-                if($this->_check_whitelist_auth() === TRUE){
-                    return TRUE;
-                }
-            }
-            $this->load->library('Signature');
-            $auth = new Signature();
-            if ($auth->Check() === FALSE) {
-                $this->response([$this->config->item('rest_message_field_name') => 400], 200);
-            }
+        $param = $this->config->item('check_class');
+        $this->load->library('ApiCheck',$param);
+        $auth = new ApiCheck($param);
+        $result = $auth->doCheckFlow();
+
+        if($result !== TRUE ){
+            $this->response([$this->config->item('rest_message_field_name') => $result], 200);
         }
 
-        // check auth ,if the user has ability to access the api resource
-        if ($this->config->item('auth_check_enable') === TRUE){
-            $this->load->library('Auth');
-            $auth = new Auth();
-            if($auth->Check() === FALSE){
-                $this->response([$this->config->item('rest_message_field_name') => 401], 200);
-            }
-        }
-
-        // check limit by ip, if over limit, response 429  too many request;
-        if ($this->config->item('limits_check_enable') === TRUE) {
-            if ($this->config->item('rest_ip_whitelist_enabled') === TRUE){
-                if($this->_check_whitelist_auth() === TRUE){
-                    return TRUE;
-                }
-            }
-            $this->load->library('AccessLimit');
-            $auth = new AccessLimit();
-            if ($auth->Check() === FALSE) {
-                $this->response([$this->config->item('rest_message_field_name') => 429], 200);
-            }
-        }
     }
 
     /**
@@ -863,59 +830,6 @@ abstract class REST_Controller extends CI_Controller {
         $string = strip_tags($this->form_validation->error_string());
 
         return explode("\n", trim($string, "\n"));
-    }
-
-    // SECURITY FUNCTIONS ---------------------------------------------------------
-
-
-    /**
-     * Checks if the client's ip is in the 'rest_ip_blacklist' config and generates a 401 response
-     *
-     * @access protected
-     */
-
-    protected function _check_blacklist_auth()
-    {
-        $blacklist = explode(',', $this->config->item('rest_ip_blacklist'));
-
-        foreach ($blacklist AS &$ip)
-        {
-            $ip = trim($ip);
-        }
-
-        if (in_array($this->input->ip_address(), $blacklist) === TRUE)
-        {
-            return TRUE;
-        }
-
-        return FALSE;
-    }
-
-
-    /**
-     * Check if the client's ip is in the 'rest_ip_whitelist' config and generates a 401 response
-     *
-     * @access protected
-     * @return bool
-     */
-
-    protected function _check_whitelist_auth()
-    {
-        $whitelist = explode(',', $this->config->item('rest_ip_whitelist'));
-
-        array_push($whitelist, '127.0.0.1', '0.0.0.0');
-
-        foreach ($whitelist AS &$ip)
-        {
-            $ip = trim($ip);
-        }
-
-        if (in_array($this->input->ip_address(), $whitelist) === TRUE)
-        {
-            return TRUE;
-        }
-
-        return FALSE;
     }
 
 }

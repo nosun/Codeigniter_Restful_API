@@ -1,11 +1,11 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
-
-class Auth {
+class Auth implements CheckInterFace {
 
     private $_redis_pre = '';
     private $_auth_pass = array();
     private $_ci;
+    private $_error = 401;
 
     public function __construct(){
         $this->_ci        = get_instance();
@@ -23,20 +23,28 @@ class Auth {
      * @return bool
      */
 
-    public function check() {
+    public function doCheck() {
         $method = $_SERVER['REQUEST_METHOD'];
         $arr = $this->_ci->uri->segment('3');
         if(in_array($arr.'_'.$method,$this->_auth_pass)){
-            return TRUE;
+            return TRUE; //无需验证，进入下一个check
         }
-        $token = $this->_ci->input->request_headers()['Token'];
-        if( isset($token)){
-            $token_value = $this->_ci->redis_model->getToken($this->_redis_pre.$token);
+        $header = $this->_ci->input->request_headers();
+        if(isset($header['Token'])){
+            $token_value = $this->_ci->redis_model->getToken($this->_redis_pre.$header['Token']);
             if($token_value){
-                return true;
+                return true; // 验证成功，进入下一个check
             }
         }
-        return false;
-
+        return false;// 验证失败，报错
     }
+
+    public function setError($error){
+        $this->_error = $error;
+    }
+
+    public function getError(){
+        return $this->_error;
+    }
+
 }

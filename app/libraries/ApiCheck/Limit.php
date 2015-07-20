@@ -1,14 +1,15 @@
 <?php defined('BASEPATH') OR exit('No direct script access allowed');
 
-class AccessLimit {
+class Limit implements CheckInterFace {
 
     private $_rate;
     private $_time;
     private $_redis_pre;
     private $_ci;
+    private $_error = 429;
 
     public function __construct(){
-        $this->_ci        = get_instance();
+        $this->_ci        = &get_instance();
         $this->_rate      = $this->_ci->config->item('limits_rate');
         $this->_time      = $this->_ci->config->item('limits_time');
         $this->_redis_pre = $this->_ci->config->item('limits_pre');
@@ -24,7 +25,7 @@ class AccessLimit {
      * @return bool
      */
 
-    public function check() {
+    public function doCheck() {
 
         $ip         = $this->_ci->input->ip_address();
         $last_check = $this->_ci->redis_model->getLimit($this->_redis_pre.$ip,'check_time');
@@ -57,6 +58,14 @@ class AccessLimit {
         $this->_ci->redis_model->setLimit($this->_redis_pre.$ip,['check_time'=>$last_check,'allow_times'=>$allowance]);
 
         return TRUE;
+    }
+
+    public function setError($error){
+        $this->_error = $error;
+    }
+
+    public function getError(){
+        return $this->_error;
     }
 
 
