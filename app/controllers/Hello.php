@@ -8,11 +8,7 @@ class Hello extends CI_Controller
     }
 
     function index(){
-
-        $this->load->view('welcome');
+        echo "hello";
     }
-
-
-
 
 }
