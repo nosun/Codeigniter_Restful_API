@@ -41,6 +41,7 @@ class Redis_Model  extends CI_Model {
 
     public function setLimit($key,array $value){
         $this->redis->hMset($key,$value);
+        $this->redis->expire($key,'3600');
     }
 
     public function getLimit($key,$field){
@@ -49,10 +50,15 @@ class Redis_Model  extends CI_Model {
     
     public function setToken($key,$value){
         $this->redis->set($key,$value);
+        $this->redis->expire($key,'7200');
     }
 
     public function getToken($key){
         return $this->redis->get($key);
+    }
+
+    public function delToken($key){
+        return $this->redis->del($key);
     }
 
 }

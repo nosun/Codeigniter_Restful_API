@@ -282,14 +282,7 @@ abstract class REST_Controller extends CI_Controller {
      */
     public function __destruct()
     {
-        // Get the current timestamp
-        $this->_end_rtime = microtime(TRUE);
 
-        // Log the loading time to the log table
-        if ($this->config->item('rest_enable_logging') === TRUE)
-        {
-            $this->_log_access_time();
-        }
     }
 
     /**

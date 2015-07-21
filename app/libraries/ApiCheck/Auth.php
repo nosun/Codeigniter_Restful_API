@@ -24,7 +24,7 @@ class Auth implements CheckInterFace {
      */
 
     public function doCheck() {
-        $method = $_SERVER['REQUEST_METHOD'];
+        $method = strtolower($_SERVER['REQUEST_METHOD']);
         $arr = $this->_ci->uri->segment('3');
         if(in_array($arr.'_'.$method,$this->_auth_pass)){
             return TRUE; //无需验证，进入下一个check

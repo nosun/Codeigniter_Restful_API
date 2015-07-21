@@ -14,7 +14,7 @@ class Signature  implements CheckInterFace{
     }
 
     public function doCheck(){
-        $signature = isset($this->_header['signature'])?$this->_header['signature']:'';
+        $signature = isset($this->_header['Signature'])?$this->_header['Signature']:'';
 
         if($signature == ''){
             return FALSE;

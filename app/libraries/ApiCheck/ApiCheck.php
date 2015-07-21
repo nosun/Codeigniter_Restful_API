@@ -18,7 +18,11 @@ class ApiCheck {
 
     public function doCheckFlow(){
         foreach ($this->_filter as $class){
-            $this->loadClass($class);
+
+            if($this->loadClass($class) == false){
+                return $this->_ex_error;
+            };
+
             $auth = new $class();
             try{
                 if($auth->doCheck() === FALSE){
@@ -33,7 +37,15 @@ class ApiCheck {
     }
 
     public function loadClass($class){
-        require $class.'.php';
+        // check if the file exist
+        $file = dirname(__FILE__).'/'.$class.'.php';
+        if(file_exists($file) === FALSE){
+            return FALSE;
+        }
+
+        require_once($file);
+        return TRUE;
+
     }
 
 }

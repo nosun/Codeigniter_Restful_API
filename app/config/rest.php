@@ -62,123 +62,61 @@ $config['rest_message_field_name'] = 'message';
 
 $config['enable_emulate_request'] = TRUE;
 
+
+
 /*
 |--------------------------------------------------------------------------
-| Enable signature
+| REST Check
 |--------------------------------------------------------------------------
 |
-| 1、if enable signature，server will check the signature passed from header,
+| 1. blackList check
+| Prevent connections to the REST server from blacklisted IP addresses
+| 2. whiteList check
+| Pass the request if the client in WhiteList
+| 3. Signature check
+|    if enable signature，server will check the signature passed from header,
 |    this need client do the same md5 signature。
 | 2、rest_signature_key is the salt for md5 signature
+| 4. Auth check
+|    1)if enable auth_check, server will check the token passed from header
+|    2)need user login, and then give token to client,at the same time save the token
+|      to redis。
+|    3)when check auth, get token from redis,if exist, get the user pass.
+|    4)the token in fact is Identity of the user, you can use it in your function too.
+|    5)the auth check function you can override it in your controller
+|    6)the auth function for get token you must implement yourself.
+| 5. Limit check : control the access limit
+|
+| you can set the Check Class in an array like below example.
+| and you also can add new Class in library => Auth file, then add it in config.
+| eg. $config['check_class'] = ['BlackList','WhiteList','Signature','Auth','Limit'];
 |
 */
 
-$config['signature_check_enable'] = TRUE;
-$config['signature_key'] = 'skyware';
 
-/*
-|--------------------------------------------------------------------------
-| Enable auth_check
-|--------------------------------------------------------------------------
-|
-| 1、if enable auth_check, server will check the token passed from header
-| 2、need user login, and then give token to client,at the same time save the token
-|   to redis。
-| 3、when check auth, get token from redis,if exist, get the user pass.
-| 4、the token in fact is Identity of the user, you can use it in your function too.
-| 5、the auth check function you can override it in your controller
-| 6、the auth function for get token you must implement yourself.
-|
-*/
+$config['check_class'] = ['BlackList','WhiteList','Signature','Auth','Limit'];
 
-$config['auth_check_enable']= TRUE;
-
-/*
-|--------------------------------------------------------------------------
-| The method ignore auth check
-|--------------------------------------------------------------------------
-|
-| Api method which is public, without token auth.
-|
-*/
-$config['auth_pass']= ['index_get'];
-
-/*
-|--------------------------------------------------------------------------
-| Global IP Whitelisting
-|--------------------------------------------------------------------------
-|
-| Limit connections Just For Testing
-|
-| Usage:
-| 1. will not need signature check, direct pass
-| 2. will not need limit check, direct pass
-|
-*/
-
-$config['rest_ip_whitelist_enabled'] = TRUE;
-
-/*
-|--------------------------------------------------------------------------
-| REST IP Whitelist
-|--------------------------------------------------------------------------
-|
-| Limit connections to your REST server with a comma separated
-| list of IP addresses
-|
-| e.g: '123.456.789.0, 987.654.32.1'
-|
-| 127.0.0.1 and 0.0.0.0 are allowed by default
-|
-*/
-
-$config['rest_ip_whitelist'] = '0.0.0.0';
-
-/*
-|--------------------------------------------------------------------------
-| Global IP Blacklisting
-|--------------------------------------------------------------------------
-|
-| Prevent connections to the REST server from blacklisted IP addresses
-|
-| Usage:
-| 1. Set to TRUE and add any IP address to 'rest_ip_blacklist'
-|
-*/
-$config['rest_ip_blacklist_enabled'] = TRUE;
-
-/*
-|--------------------------------------------------------------------------
-| REST IP Blacklist
-|--------------------------------------------------------------------------
-|
-| Prevent connections from the following IP addresses
-|
-| e.g: '123.456.789.0, 987.654.32.1'
-|
-*/
+// BlackList
 $config['rest_ip_blacklist'] = '987.654.32.1';
 
+// whiteList
+$config['rest_ip_whitelist'] = '0.0.0.0';
 
-/*
-|--------------------------------------------------------------------------
-| REST Ignore HTTP Accept
-|--------------------------------------------------------------------------
-|
-| Set True to open limit control;
-| use Redis to save limit data by default;
-|
-*/
+// signature salt key
+$config['signature_key'] = 'skyware';
 
+// redis pre for auth
+$config['auth_pre'] = 'token_';
+// Api method which is public, without token auth.
+$config['auth_pass']= ['token_post','login_id_get','user_post',
+       'passwd_post' ,'app_get','appHost_get','wpm_post','deviceMac_post',
+       'testSpeed_get','testHttp_get','testDelay_get',
+       ];
+
+// limit check relation
 $config['limits_check_enable'] = TRUE;
 $config['limits_rate'] = 5;
 $config['limits_time'] = 8;
 $config['limits_cache'] = 'redis';
 $config['limits_model'] = 'redis_model';
 $config['limits_pre'] = 'limit_';
-
-$config['auth_pre'] = 'token_';
-
-$config['check_class'] = ['Auth','Limit'];
-
-
