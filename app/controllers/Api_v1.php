@@ -621,7 +621,7 @@ class Api_v1 extends REST_Controller
     //just a redis test
     public function testHttp_get(){
         //var_dump($this->input->get_request_header('test', TRUE));
-        $code = $this->uri->segment('4');
+        $code = $this->uri->segment('3');
         //返回值
         if($code){
             $this->response(array('result'=>'ok'), $code);

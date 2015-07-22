@@ -14,13 +14,145 @@
  */
 
 abstract class REST_Controller extends CI_Controller {
+    // Note: Only the widely used HTTP status codes are documented
+
+    // Informational
+
+    const HTTP_CONTINUE = 100;
+    const HTTP_SWITCHING_PROTOCOLS = 101;
+    const HTTP_PROCESSING = 102;            // RFC2518
+
+    // Success
+
     /**
-     * This defines the rest format.
-     * Must be overridden it in a controller so that it is set.
-     *
-     * @var string|NULL
+     * The request has succeeded
      */
-    protected $rest_format = NULL;
+    const HTTP_OK = 200;
+
+    /**
+     * The server successfully created a new resource
+     */
+    const HTTP_CREATED = 201;
+    const HTTP_ACCEPTED = 202;
+    const HTTP_NON_AUTHORITATIVE_INFORMATION = 203;
+
+    /**
+     * The server successfully processed the request, though no content is returned
+     */
+    const HTTP_NO_CONTENT = 204;
+    const HTTP_RESET_CONTENT = 205;
+    const HTTP_PARTIAL_CONTENT = 206;
+    const HTTP_MULTI_STATUS = 207;          // RFC4918
+    const HTTP_ALREADY_REPORTED = 208;      // RFC5842
+    const HTTP_IM_USED = 226;               // RFC3229
+
+    // Redirection
+
+    const HTTP_MULTIPLE_CHOICES = 300;
+    const HTTP_MOVED_PERMANENTLY = 301;
+    const HTTP_FOUND = 302;
+    const HTTP_SEE_OTHER = 303;
+
+    /**
+     * The resource has not been modified since the last request
+     */
+    const HTTP_NOT_MODIFIED = 304;
+    const HTTP_USE_PROXY = 305;
+    const HTTP_RESERVED = 306;
+    const HTTP_TEMPORARY_REDIRECT = 307;
+    const HTTP_PERMANENTLY_REDIRECT = 308;  // RFC7238
+
+    // Client Error
+
+    /**
+     * The request cannot be fulfilled due to multiple errors
+     */
+    const HTTP_BAD_REQUEST = 400;
+
+    /**
+     * The user is unauthorized to access the requested resource
+     */
+    const HTTP_UNAUTHORIZED = 401;
+    const HTTP_PAYMENT_REQUIRED = 402;
+
+    /**
+     * The requested resource is unavailable at this present time
+     */
+    const HTTP_FORBIDDEN = 403;
+
+    /**
+     * The requested resource could not be found
+     *
+     * Note: This is sometimes used to mask if there was an UNAUTHORIZED (401) or
+     * FORBIDDEN (403) error, for security reasons
+     */
+    const HTTP_NOT_FOUND = 404;
+
+    /**
+     * The request method is not supported by the following resource
+     */
+    const HTTP_METHOD_NOT_ALLOWED = 405;
+
+    /**
+     * The request was not acceptable
+     */
+    const HTTP_NOT_ACCEPTABLE = 406;
+    const HTTP_PROXY_AUTHENTICATION_REQUIRED = 407;
+    const HTTP_REQUEST_TIMEOUT = 408;
+
+    /**
+     * The request could not be completed due to a conflict with the current state
+     * of the resource
+     */
+    const HTTP_CONFLICT = 409;
+    const HTTP_GONE = 410;
+    const HTTP_LENGTH_REQUIRED = 411;
+    const HTTP_PRECONDITION_FAILED = 412;
+    const HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
+    const HTTP_REQUEST_URI_TOO_LONG = 414;
+    const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
+    const HTTP_REQUESTED_RANGE_NOT_SATISFIABLE = 416;
+    const HTTP_EXPECTATION_FAILED = 417;
+    const HTTP_I_AM_A_TEAPOT = 418;                                               // RFC2324
+    const HTTP_UNPROCESSABLE_ENTITY = 422;                                        // RFC4918
+    const HTTP_LOCKED = 423;                                                      // RFC4918
+    const HTTP_FAILED_DEPENDENCY = 424;                                           // RFC4918
+    const HTTP_RESERVED_FOR_WEBDAV_ADVANCED_COLLECTIONS_EXPIRED_PROPOSAL = 425;   // RFC2817
+    const HTTP_UPGRADE_REQUIRED = 426;                                            // RFC2817
+    const HTTP_PRECONDITION_REQUIRED = 428;                                       // RFC6585
+    const HTTP_TOO_MANY_REQUESTS = 429;                                           // RFC6585
+    const HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE = 431;                             // RFC6585
+
+    // Server Error
+
+    /**
+     * The server encountered an unexpected error
+     *
+     * Note: This is a generic error message when no specific message
+     * is suitable
+     */
+    const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+    /**
+     * The server does not recognise the request method
+     */
+    const HTTP_NOT_IMPLEMENTED = 501;
+    const HTTP_BAD_GATEWAY = 502;
+    const HTTP_SERVICE_UNAVAILABLE = 503;
+    const HTTP_GATEWAY_TIMEOUT = 504;
+    const HTTP_VERSION_NOT_SUPPORTED = 505;
+    const HTTP_VARIANT_ALSO_NEGOTIATES_EXPERIMENTAL = 506;                        // RFC2295
+    const HTTP_INSUFFICIENT_STORAGE = 507;                                        // RFC4918
+    const HTTP_LOOP_DETECTED = 508;                                               // RFC5842
+    const HTTP_NOT_EXTENDED = 510;                                                // RFC2774
+    const HTTP_NETWORK_AUTHENTICATION_REQUIRED = 511;
+    /**
+ * This defines the rest format.
+ * Must be overridden it in a controller so that it is set.
+ *
+ * @var string|NULL
+ */
+    protected $rest_format = 'json';
 
     /**
      * Defines the list of method properties such as limit, log and level
@@ -160,10 +292,13 @@ abstract class REST_Controller extends CI_Controller {
      * @var array
      */
     protected $_supported_formats = [
-        'json'  => 'application/json',
+        'json' => 'application/json',
+        'csv' => 'application/csv',
+        'html' => 'text/html',
         'jsonp' => 'application/javascript',
+        'php' => 'text/plain',
         'serialized' => 'application/vnd.php.serialized',
-        'xml'  => 'application/xml'
+        'xml' => 'application/xml'
     ];
 
     /**
@@ -195,10 +330,22 @@ abstract class REST_Controller extends CI_Controller {
     public function __construct($config = 'rest')
     {
         parent::__construct();
-
         // Disable XML Entity (security vulnerability)
 
         libxml_disable_entity_loader(TRUE);
+
+        // Check to see if PHP is equal to or greater than 5.4.x
+        if (is_php('5.4') === FALSE)
+        {
+            // CodeIgniter 3 is recommended for v5.4 or above
+            exit('Using PHP v' . PHP_VERSION . ', though PHP v5.4 or greater is required');
+        }
+
+        // Check to see if this is CI 3.x
+        if (explode('.', CI_VERSION, 2)[0] < 3)
+        {
+            exit('REST Server requires CodeIgniter 3.x');
+        }
 
         // Set the default value of global xss filtering. Same approach as CodeIgniter 3
         $this->_enable_xss = ($this->config->item('global_xss_filtering') === TRUE);
@@ -260,8 +407,7 @@ abstract class REST_Controller extends CI_Controller {
             $this->{'_' . $this->request->method . '_args'}
         );
 
-        // Which format should the data be response // in config
-        $this->response->format = $this->config->item('rest_default_format');
+        $this->response->format = $this->_detect_output_format();
 
         $param = $this->config->item('check_class');
         $this->load->library('ApiCheck',$param);
@@ -269,7 +415,7 @@ abstract class REST_Controller extends CI_Controller {
         $result = $auth->doCheckFlow();
 
         if($result !== TRUE ){
-            $this->response([$this->config->item('rest_message_field_name') => $result], 200);
+            $this->response([$this->config->item('rest_message_field_name') => $result], self::HTTP_OK);
         }
 
     }
@@ -300,7 +446,7 @@ abstract class REST_Controller extends CI_Controller {
         if ($this->config->item('force_https') && $this->request->ssl === FALSE)
         {
             // http访问 不允许
-            $this->response([$this->config->item('rest_message_field_name') => 406], 200);
+            $this->response([$this->config->item('rest_message_field_name') => self::HTTP_NOT_ACCEPTABLE], self::HTTP_OK);
         }
 
         $controller_method = $object_called . '_' . $this->request->method;
@@ -308,7 +454,7 @@ abstract class REST_Controller extends CI_Controller {
         // 方法不存在
         if (method_exists($this, $controller_method) === FALSE)
         {
-            $this->response([$this->config->item('rest_message_field_name') => 405], 200);
+            $this->response([$this->config->item('rest_message_field_name') => self::HTTP_NOT_FOUND], self::HTTP_OK);
         }
 
         // 传递参数给正确的方法
@@ -319,7 +465,7 @@ abstract class REST_Controller extends CI_Controller {
         catch (Exception $ex)
         {
             // 方法不存在
-            $this->response([$this->config->item('rest_message_field_name') => 405], 200);
+            $this->response([$this->config->item('rest_message_field_name') => self::HTTP_NOT_FOUND], self::HTTP_OK);
         }
     }
 
@@ -348,32 +494,17 @@ abstract class REST_Controller extends CI_Controller {
         // If data is NULL and no HTTP status code provided, then display, error and exit
         if ($data === NULL && $http_code === NULL)
         {
-            $http_code = 404;
+            $http_code = self::HTTP_NOT_FOUND;
         }
 
         // If data is not NULL and a HTTP status code provided, then continue
         elseif ($data !== NULL)
         {
-            // Is compression enabled and available?
-            if ($this->config->item('compress_output') === TRUE && $this->_zlib_oc == FALSE)
-            {
-                if (extension_loaded('zlib'))
-                {
-                    $http_encoding = $this->input->server('HTTP_ACCEPT_ENCODING');
-                    if ($http_encoding !== NULL && strpos($http_encoding, 'gzip') !== FALSE)
-                    {
-                        ob_start('ob_gzhandler');
-                    }
-                }
-            }
-
             // If the format method exists, call and return the output in that format
             if (method_exists($this->format, 'to_' . $this->response->format))
             {
-                //Set the format header
-                header('Content-Type: ' . $this->_supported_formats[$this->response->format]
-                    . '; charset=' . strtolower($this->config->item('charset')));
-
+                // Set the format header
+                $this->output->set_content_type($this->_supported_formats[$this->response->format], strtolower($this->config->item('charset')));
                 $output = $this->format->factory($data)->{'to_' . $this->response->format}();
 
                 // An array must be parsed as a string, so as not to cause an array to string error.
@@ -399,37 +530,39 @@ abstract class REST_Controller extends CI_Controller {
         // If not greater than zero, then set the HTTP status code as 200 by default
         // Though perhaps 500 should be set instead, for the developer not passing a
         // correct HTTP status code
+        $http_code > 0 || $http_code = self::HTTP_OK;
 
-        $http_code > 0 ?  : $http_code = 200;
+        $this->output->set_status_header($http_code);
 
-        set_status_header($http_code);
-
-        // JC: Log response code only if rest logging enabled
-        if ($this->config->item('rest_enable_logging') === TRUE)
-        {
-            $this->_log_response_code($http_code);
-        }
-
-        // If zlib.output_compression is enabled it will compress the output,
-        // but it will not modify the content-length header to compensate for
-        // the reduction, causing the browser to hang waiting for more data.
-        // We'll just skip content-length in those cases
-
-        if (!$this->_zlib_oc && !$this->config->item('compress_output'))
-        {
-            //header('Content-Length: ' . strlen($output));
-        }
+        // Output the data
+        $this->output->set_output($output);
 
         if ($continue === FALSE)
         {
-            exit($output);
+            // Display the data and exit execution
+            $this->output->_display();
+            exit;
         }
 
-        echo($output);
-        ob_end_flush();
-        ob_flush();
-        flush();
+        // Otherwise dump the output automatically
     }
+
+
+    /**
+     * Takes mixed data and optionally a status code, then creates the response
+     * within the buffers of the Output class. The response is sent to the client
+     * lately by the framework, after the current controller's method termination.
+     * All the hooks after the controller's method termination are executable.
+     *
+     * @access public
+     * @param array|NULL $data Data to output to the user
+     * @param int|NULL $http_code HTTP status code
+     */
+    public function set_response($data = NULL, $http_code = NULL)
+    {
+        $this->response($data, $http_code, TRUE);
+    }
+
 
     /**
      * Get the input format e.g. json or xml
@@ -498,8 +631,66 @@ abstract class REST_Controller extends CI_Controller {
         return in_array($method, $this->allowed_http_methods) && method_exists($this, '_parse_' . $method) ? $method : 'get';
     }
 
-    // parse http method args -------------------------------------------------------
+    /**
+     * Detect which format should be used to output the data
+     *
+     * @access protected
+     * @return mixed|NULL|string Output format
+     */
+    protected function _detect_output_format()
+    {
+        // Concatenate formats to a regex pattern e.g. \.(csv|json|xml)
+        $pattern = '/\.(' . implode('|', array_keys($this->_supported_formats)) . ')$/';
 
+        // Check if a file extension is used e.g. http://example.com/api/index.json?param1=param2
+        $matches = [];
+        if (preg_match($pattern, $this->uri->uri_string(), $matches)) {
+            return $matches[1];
+        }
+
+        // Get the format via the GET parameter labelled 'format'
+        $format = isset($this->_get_args['format']) ? strtolower($this->_get_args['format']) : NULL;
+
+        // A format has been passed as an argument in the URL and it is supported
+        if ($format !== NULL && isset($this->_supported_formats[$format])) {
+            return $format;
+        }
+
+        // Get the HTTP_ACCEPT server variable
+        $http_accept = $this->input->server('HTTP_ACCEPT');
+
+        // Otherwise, check the HTTP_ACCEPT server variable
+        if ($this->config->item('rest_ignore_http_accept') === FALSE && $http_accept !== NULL) {
+            // Check all formats against the HTTP_ACCEPT header
+            foreach (array_keys($this->_supported_formats) as $format) {
+                // Has this format been requested?
+                if (strpos($http_accept, $format) !== FALSE) {
+                    if ($format !== 'html' && $format !== 'xml') {
+                        // If not HTML or XML assume it's correct
+                        return $format;
+                    } elseif ($format === 'html' && strpos($http_accept, 'xml') === FALSE) {
+                        // HTML or XML have shown up as a match
+                        // If it is truly HTML, it wont want any XML
+                        return $format;
+                    } else if ($format === 'xml' && strpos($http_accept, 'html') === FALSE) {
+                        // If it is truly XML, it wont want any HTML
+                        return $format;
+                    }
+                }
+            }
+        }
+
+        // Check if the controller has a default format
+        if (empty($this->rest_format) === FALSE)
+        {
+            return $this->rest_format;
+
+        }
+        // Obtain the default format from the configuration
+        return $this->config->item('rest_default_format');
+
+    }
+    // parse http method args -------------------------------------------------------
     /**
      * Parse the HEAD request arguments
      *
@@ -822,7 +1013,7 @@ abstract class REST_Controller extends CI_Controller {
     {
         $string = strip_tags($this->form_validation->error_string());
 
-        return explode("\n", trim($string, "\n"));
+        return explode(PHP_EOL, trim($string, PHP_EOL));
     }
 
 }

@@ -62,7 +62,16 @@ $config['rest_message_field_name'] = 'message';
 
 $config['enable_emulate_request'] = TRUE;
 
-
+/*
+|--------------------------------------------------------------------------
+| REST Ignore HTTP Accept
+|--------------------------------------------------------------------------
+|
+| Set to TRUE to ignore the HTTP Accept and speed up each request a little.
+| Only do this if you are using the $this->rest_format or /format/xml in URLs
+|
+*/
+$config['rest_ignore_http_accept'] = FALSE;
 
 /*
 |--------------------------------------------------------------------------

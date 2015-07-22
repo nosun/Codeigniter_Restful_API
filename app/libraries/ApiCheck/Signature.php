@@ -21,6 +21,7 @@ class Signature  implements CheckInterFace{
         }
 
         $signature_check = $this->generate();
+
         if($signature != $signature_check){
             return FALSE;
         }
@@ -36,13 +37,13 @@ class Signature  implements CheckInterFace{
     }
 
     protected function generate(){
-        $parameter = isset($this->_header['token'])?$this->_header['token']:'';
-
+        $parameter = '';
         for($i = 2;$this->_ci->uri->segment($i) != ''; $i++){
             $parameter = $parameter.$this->_ci->uri->segment($i);
         }
-
-        $signature = md5(md5($parameter).$this->_salt);
+        $token     = isset($this->_header['Token'])?$this->_header['Token']:'';
+        $version   = isset($this->_header['Apiver'])?$this->_header['Apiver']:'';
+        $signature = md5(md5($parameter).$version.$token.$this->_salt);
 
         return $signature;
     }
