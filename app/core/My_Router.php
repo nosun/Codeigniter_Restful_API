@@ -8,7 +8,6 @@ class My_Router extends CI_Router{
         if(isset($_SERVER['HTTP_APIVER'])){
             $this->version = $_SERVER['HTTP_APIVER'];
         }
-
         parent::__construct();
     }
 
