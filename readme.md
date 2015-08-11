@@ -40,7 +40,127 @@ Codeigniter 的缺点也是非常明显的，设计理念是简单的MVC，自�
 ### 配置
 配置config文件rest.php
 
-
 ### 如何使用
+#### 全新安装 CI3.0 和redis数据库，安装predis扩展或者phpredis库
+略
+#### 拷贝以下文件到您的 APP目录
 
+	/app/libraries/REST_Controller.php
+	/app/libraries/Format.php
+	/app/libraries/ApiCheck/
+	
+	/app/config/rest.php
+	/app/core/MY_Router.php
+
+#### 在app/controllers目录下新增您的api controller文件
+
+如： api_v1.php
+
+
+	<?php defined('BASEPATH') OR exit('No direct script access allowed');
+
+	require APPPATH.'/libraries/REST_Controller.php';
+
+	class Api_v1 extends REST_Controller
+	{
+		//
+	    private $user_id = null;
+	 
+	    function __construct()
+	    {
+	        parent::__construct('rest');
+	        $header = $this->input->request_headers();
+	        $this->load->model('redis_model');
+	        if(isset($header['Token'])) {
+	            $this->user_id = $this->redis_model->getToken($this->config->item('auth_pre').$header['Token']);
+	        }
+	    }
+	    //检查用户是否存在，true 表示存在
+	    function login_id_get()
+	    {
+	        $this->load->model('user_model');
+	        $app_id=$this->uri->segment('4');
+	        $login_id=$this->uri->segment('5');
+	        if(empty($login_id) || empty($app_id)){
+	            $this->response(array('message'=>400),200);
+	        }
+	        $user=array(
+	            'login_id'=>$login_id,
+	            'app_id'=>$app_id
+	        );
+	        $result=$this->user_model->getUser($user);
+	        if($result) {
+	            $this->response(array('message' => 200), 200);
+	        }else{
+	            $this->response(array('message' => 404), 200);
+	        }
+	    }
+	}
+
+#### 常规使用
+
+#### header中需要传入的参数
+
+header 中有三个必填参数，键名统一用小写。
+
+- apiver（必填）   ：这里对应的是api接口的版本号，例如 v1；
+- token（接口相关） ：这里对应的使用户的身份认证token，但不是所有的接口都有；
+- signature（必填）: 访问签名信息；
+
+#### 如何使用token auth
+
+用户登录之后，随机生成token，并写入redis，设置有效时间，并返回结果。
+
+需要授权的页面，通过redis验证token，如果没有，则要求重新登录以获取新的token。
+
+#### 如何使用签名
+
+应签名加密的要求，这里设置一个客户端和服务器约定好的key，规则可以自己设定，以下为例子
+
+签名可以分为两种情况，构造方式如下：
+
+- 接口不需要token  
+对url中`api`之后的所有字符串`拼接`后进行`MD5加密`，然后`拼接`指定 `key` 第二次`MD5加密`，如：
+    
+        访问/api/login_id/1/18600364250
+        
+        key = 'skyware'; 
+        apiver = 'v1';
+        
+        signature = MD5(MD5('login_id'.'1'.'18600364250').'v1'.'yourkey')。
+
+> 其中`.`为字符串拼接符号，请根据具体的语言进行处理.    
+
+- 接口需要token
+
+        访问/api/devices
+        
+        key = 'skyware'; 
+        apiver = 'v1';
+        token = '19234'
+    
+        signature = MD5(MD5('devices').'v1'.'19234'.'yourkey')。
+
+#### 如何使用限速访问
+
+
+
+#### 如何使用白名单，黑名单
+
+
+
+
+
+#### 常用的response code
+
+    200：响应成功
+    400：签名不正确或请求参数不正确
+	401：token不存在
+	403：禁止访问（黑名单）
+    404：请求无结果
+	405：方法不存在
+	406：必须https
+	429：访问速度过快
+    500：服务器错误
+	501：创建文件夹失败
 
