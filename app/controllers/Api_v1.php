@@ -235,6 +235,7 @@ class Api_v1 extends REST_Controller
 
         $config['upload_path'] = $path;
         $this->load->library('upload',$config);
+        $this->load->helper('url');
         if ( ! $this->upload->do_upload('file'))
         {
             $error = array('result' => $this->upload->display_errors());
@@ -256,7 +257,7 @@ class Api_v1 extends REST_Controller
             $result=$this->file_model->addFile($file);
             if($result) {
                 $url= base_url().$dir.'/'.$data['file_name'];
-                $this->response(array('result'=>$url,'message' => 200), 200);
+                $this->response(array('icon_url'=>$url,'message' => 200), 200);
             }else{
                 $this->response(array('message' => 500), 200);
             }
