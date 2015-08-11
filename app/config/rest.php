@@ -109,7 +109,7 @@ $config['check_class'] = ['BlackList','WhiteList','Signature','Auth','Limit'];
 $config['rest_ip_blacklist'] = '987.654.32.1';
 
 // whiteList
-$config['rest_ip_whitelist'] = '0.0.0.0';
+$config['rest_ip_whitelist'] = '106.39.158.141';
 
 // signature salt key
 $config['signature_key'] = 'skyware';

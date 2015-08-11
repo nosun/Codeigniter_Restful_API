@@ -7,6 +7,8 @@ Class User_model extends CI_Model{
         $this->load->database();
         $this->tb_user = 'user';
         $this->tb_device_wxuser =$this->db->dbprefix('device_wxuser');
+        $this->tb_feedback = $this->db->dbprefix('feedback');
+        $this->tb_feedback_reply = $this->db->dbprefix('feedback_reply');
         $this->load->helper('check');
     }
 
@@ -91,4 +93,27 @@ Class User_model extends CI_Model{
         $strSql = 'delete from '.$this->tb_device_wxuser.' where id = '.$id;
         $this->db->query($strSql);
     }
+
+    public function getFeedback($feed){
+        $query=$this->db->get_where($this->tb_feedback,$feed);
+        return $query->result();
+    }
+
+    public function getFeedbackReply($feed){
+        $query=$this->db->get_where($this->tb_feedback_reply,$feed);
+        return $query->result();
+    }
+
+    public function updateFeedback($feed,$where){
+        return $this->db->update($this->tb_feedback,$feed,$where);
+    }
+
+    public function addFeedback($feed){
+        return $this->db->insert($this->tb_feedback, $feed);
+    }
+
+    public function addFeedbackReply($feed){
+        return $this->db->insert($this->tb_feedback_reply, $feed);
+    }
+
 }

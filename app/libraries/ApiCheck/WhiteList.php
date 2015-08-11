@@ -11,6 +11,7 @@ class WhiteList implements CheckInterFace {
         $this->_ci        = &get_instance();
         $this->_ipList    = $this->_ci->config->item('rest_ip_whitelist');
         $this->_client_ip = $this->_ci->input->ip_address();
+        //var_dump($this->_client_ip);die;
     }
 
     public function doCheck() {

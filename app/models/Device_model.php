@@ -12,6 +12,7 @@ Class Device_model extends CI_Model{
         $this->tb_sn =$this->db->dbprefix('product_sn');
         $this->tb_product =$this->db->dbprefix('product');
         $this->tb_app =$this->db->dbprefix('app');
+        $this->tb_device_module_firmware =$this->db->dbprefix('device_module_firmware');
         $this->load->helper('check');
     }
 
@@ -156,5 +157,9 @@ Class Device_model extends CI_Model{
 
     public function getIdBySn($sn){
 	    return $this->db->from($this->tb_device)->where('device_sn',$sn)->order_by('device_id','desc')->limit(1)->get()->row();
+    }
+
+    public function getNewVersion(){
+        return $this->db->from($this->tb_device_module_firmware)->order_by('firmware_version','desc')->limit(1)->get()->row();
     }
 }

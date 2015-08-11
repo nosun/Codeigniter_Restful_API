@@ -19,8 +19,8 @@ class Api_v1 extends REST_Controller
     function login_id_get()
     {
         $this->load->model('user_model');
-        $app_id=$this->uri->segment('4');
-        $login_id=$this->uri->segment('5');
+        $app_id=$this->uri->segment('3');
+        $login_id=$this->uri->segment('4');
         if(empty($login_id) || empty($app_id)){
             $this->response(array('message'=>400),200);
         }
@@ -237,7 +237,7 @@ class Api_v1 extends REST_Controller
         $this->load->library('upload',$config);
         if ( ! $this->upload->do_upload('file'))
         {
-            $error = array('error' => $this->upload->display_errors());
+            $error = array('result' => $this->upload->display_errors());
             $this->response($error, 200);
         }else{
             $data = $this->upload->data();
@@ -256,7 +256,7 @@ class Api_v1 extends REST_Controller
             $result=$this->file_model->addFile($file);
             if($result) {
                 $url= base_url().$dir.'/'.$data['file_name'];
-                $this->response(array('url'=>$url,'message' => 200), 200);
+                $this->response(array('result'=>$url,'message' => 200), 200);
             }else{
                 $this->response(array('message' => 500), 200);
             }
@@ -286,13 +286,13 @@ class Api_v1 extends REST_Controller
         $this->load->library('upload',$config);
         if ( ! $this->upload->do_upload('file'))
         {
-            $error = array('error' => $this->upload->display_errors());
+            $error = array('result' => $this->upload->display_errors());
             $this->response($error, 200);
         }else{
             $data = $this->upload->data();
             if($data) {
                 $url= base_url().$dir.'/'.$data['file_name'];
-                $this->response(array('url'=>$url,'message' => 200), 200);
+                $this->response(array('result'=>$url,'message' => 200), 200);
             }else{
                 $this->response(array('message' => 500), 200);
             }
@@ -303,8 +303,8 @@ class Api_v1 extends REST_Controller
     function device_get()
     {
         $user_id   = $this->user_id;
-        $type    = $this->uri->segment('4');
-        $value   = $this->uri->segment('5');
+        $type    = $this->uri->segment('3');
+        $value   = $this->uri->segment('4');
 
         if(empty($user_id)|| empty($type) || empty($value)){
             $this->response(array('message'=>400),200);
@@ -339,8 +339,8 @@ class Api_v1 extends REST_Controller
     //检查sn是否存在
     public function deviceSn_get(){
         $this->load->model('device_model');
-        $app_id = $this->uri->segment('4');
-        $sn=$this->uri->segment('5');
+        $app_id = $this->uri->segment('3');
+        $sn=$this->uri->segment('4');
 
         if(empty($sn) || empty($app_id)){
             $this->response(array('message'=>400), 200);
@@ -411,7 +411,7 @@ class Api_v1 extends REST_Controller
     function device_put()
     {
         $user_id    = $this->user_id;
-        $device_mac = $this->uri->segment('4');
+        $device_mac = $this->uri->segment('3');
         if (empty($user_id) || empty($device_mac)){
             $this->response(array('message'=>400), 200);
         }
@@ -520,7 +520,7 @@ class Api_v1 extends REST_Controller
 
     function bind_delete(){
         $user_id   = $this->user_id;
-        $device_id = $this->uri->segment('4');
+        $device_id = $this->uri->segment('3');
 
         if(empty($user_id) or empty($device_id)){
             $this->response(array('message'=>400), 200);
@@ -562,7 +562,7 @@ class Api_v1 extends REST_Controller
     }
 
     public function app_get(){
-        $app_id = $this->uri->segment('4');
+        $app_id = $this->uri->segment('3');
         if(empty($app_id)){
             $this->response(array('message'=>400), 200);
         }
@@ -578,7 +578,7 @@ class Api_v1 extends REST_Controller
     }
 
     public function appHost_get(){
-        $app_id = $this->uri->segment('4');
+        $app_id = $this->uri->segment('3');
         if(empty($app_id)){
             $this->response(array('message'=>400), 200);
         }
@@ -594,14 +594,14 @@ class Api_v1 extends REST_Controller
     }
 
     public function company_get(){
-        $company_id = $this->uri->segment('4');
+        $company_id = $this->uri->segment('3');
 
         if(empty($company_id)){
             $this->response(array('message'=>400), 200);
         }
 
         $this->load->model('service_model');
-        $result=$this->service_model->getCompany(array('company_id'=>$company_id));
+        $result=$this->service_model->getCompany(array('id'=>$company_id));
 
         if($result) {
             $this->response(array('result'=>$result[0],'message' => 200), 200);
@@ -612,10 +612,10 @@ class Api_v1 extends REST_Controller
 
     //just a redis test
     public function testSpeed_get(){
-        $num = $this->uri->segment('4');
+        $num = $this->uri->segment('3');
         $num = empty($num)?1:$num;
         $str =str_repeat(1,$num*1024);
-        $this->response(array('result'=>$str), 200);
+        $this->response(array('result'=>$str,'message' => 200), 200);
     }
 
     //just a redis test
@@ -630,7 +630,7 @@ class Api_v1 extends REST_Controller
 
     //just a redis test
     public function testDelay_get(){
-        $time = $this->uri->segment('4');
+        $time = $this->uri->segment('3');
         sleep($time);
         $this->response(array('result'=>'ok'), 200);
     }
@@ -716,4 +716,95 @@ class Api_v1 extends REST_Controller
             $this->response(array('message' => 404), 200);
         }
     }
+
+    //新增用户反馈
+    public function feedback_post(){
+        $user       = $this->getUserById($this->user_id);
+        $title      = $this->post('title');
+        $content    = $this->post('content');
+        $product_id = $this->post('product_id');
+        $category   = $this->post('category');
+
+        if(empty($user) or empty($title) or empty($content) or empty($product_id) or empty($category)){
+            $this->response(array('message'=>400), 200);
+        }
+
+        $this->load->model('user_model');
+
+        $feed = array(
+            'title'         => $title,
+            'content'       => $content,
+            'user_name'     => $user['user_name'],
+            'category'      => $category,
+            'product_id'    => $product_id,
+            'status'        => '1'
+        );
+        if($this->user_model->getFeedback($feed)){
+            $this->response(array('message'=>404), 200);
+        }
+
+        $feed['addtime'] = time();
+        if($this->user_model->addFeedback($feed)){
+            $this->response(array('message' => 200), 200);
+        }else{
+            $this->response(array('message' => 500), 200);
+        }
+    }
+
+    //用户对反馈的回复
+    public function feedback_reply_post(){
+        $user       = $this->getUserById($this->user_id);
+        $fid      = $this->post('fid');
+        $content    = $this->post('content');
+
+        if(empty($user) or empty($fid) or empty($content)){
+            $this->response(array('message'=>400), 200);
+        }
+        $this->load->model('user_model');
+        $feed = array(
+            'user_name' =>$user['user_name'],
+            'fid'       =>$fid,
+            'content'   =>$content,
+            'role'      =>'1'
+        );
+
+        if($this->user_model->getFeedbackReply($feed)){
+            $this->response(array('message'=>404), 200);
+        }
+        $feed['addtime'] = time();
+        $this->user_model->updateFeedback(array('status'=>'3'),array('id'=>$fid));
+        if($this->user_model->addFeedbackReply($feed)){
+            $this->response(array('message' => 200), 200);
+        }else{
+            $this->response(array('message' => 500), 200);
+        }
+    }
+
+    //获取最新的固件地址
+    public function newversion_get(){
+        $this->load->model('device_model');
+        $result=$this->device_model->getBind(array('user_id'=>$this->user_id));
+        $arr = array();
+        foreach($result as $v){
+            $device = $this->device_model->getDevice(array('device_id'=>$v->device_id));
+            $version = $device['device_wifi_firmware_version'];
+
+            $newversionarr = $this->device_model->getNewVersion();
+            $newversion = trim($newversionarr->firmware_version,"v");
+
+            if($newversion > $version){
+                $arr[]=array(
+                    'id'=>$v->device_id,
+                    'url'=>$newversionarr->firmware_w_url
+                );
+            }
+        }
+
+        if(!empty($arr)){
+            $this->response(array('result'=>$arr,'message' => 200), 200);
+        }else{
+            $this->response(array('message' => 500), 200);
+        }
+    }
+
 }
