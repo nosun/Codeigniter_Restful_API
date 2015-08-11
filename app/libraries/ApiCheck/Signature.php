@@ -9,7 +9,7 @@ class Signature  implements CheckInterFace{
 
     public function __construct(){
         $this->_ci      = get_instance();
-        $this->_salt    = $this->_ci->config->item('rest_signature_key');
+        $this->_salt    = $this->_ci->config->item('signature_key');
         $this->_header  = $this->_ci->input->request_headers();
     }
 
@@ -43,6 +43,7 @@ class Signature  implements CheckInterFace{
         }
         $token     = isset($this->_header['Token'])?$this->_header['Token']:'';
         $version   = isset($this->_header['Apiver'])?$this->_header['Apiver']:'';
+        //$like      = 'md5(md5('.$parameter.')'.$version.$token.$this->_salt.')';
         $signature = md5(md5($parameter).$version.$token.$this->_salt);
 
         return $signature;
