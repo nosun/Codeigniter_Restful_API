@@ -808,4 +808,20 @@ class Api_v1 extends REST_Controller
         }
     }
 
+    function share_get(){
+        $product_id = $this->uri->segment('3');
+
+        if(empty($product_id)){
+            $this->response(array('message'=>400), 200);
+        }
+
+        $this->load->model('device_model');
+        $result=$this->device_model->getShare($product_id);
+
+        if($result) {
+            $this->response(array('result'=>$result[0],'message' => 200), 200);
+        }else{
+            $this->response(array('message' => 404), 200);
+        }
+    }
 }

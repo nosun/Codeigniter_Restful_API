@@ -119,7 +119,7 @@ $config['auth_pre'] = 'token_';
 // Api method which is public, without token auth.
 $config['auth_pass']= ['token_post','login_id_get','user_post',
        'passwd_post' ,'app_get','appHost_get','wpm_post','deviceMac_post',
-       'testSpeed_get','testHttp_get','testDelay_get',
+       'testSpeed_get','testHttp_get','testDelay_get','share_get',
        ];
 
 // limit check relation
