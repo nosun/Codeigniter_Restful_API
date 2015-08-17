@@ -186,10 +186,10 @@ class Api_v1 extends REST_Controller
 
         $res=$this->user_model->getUser($user);
         if($res){
-            $key = md5($res[0]['user_id'].time());
-            $this->redis_model->setToken($this->config->item('auth_pre').$key,$res[0]['user_id']);
 //            $this->redis_model->setToken($res[0]['user_id'],$key);
-            if($key) {
+            if($res[0]['login_pwd'] == $this->user_model->getthispwd($login_pwd,$res[0]['salt']) ) {
+                $key = md5($res[0]['user_id'].time());
+                $this->redis_model->setToken($this->config->item('auth_pre').$key,$res[0]['user_id']);
                 $this->response(array('token'=>$key,'message' => 200), 200);
             }else{
                 $this->response(array('message' => 500), 200);

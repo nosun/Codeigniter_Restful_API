@@ -20,7 +20,7 @@ Class User_model extends CI_Model{
     }
 
     public function getUser($user) {
-        $this->db->select('user_id,app_id,login_id,user_name,user_img,user_email,user_phone,notice_pm,notice_pm_value,notice_filter,user_prefer');
+        $this->db->select('user_id,app_id,login_id,login_pwd,salt,user_name,user_img,user_email,user_phone,notice_pm,notice_pm_value,notice_filter,user_prefer');
         $query=$this->db->get_where($this->tb_user,$user);
 
         $result=resultFilter($query->result_array());
@@ -116,4 +116,7 @@ Class User_model extends CI_Model{
         return $this->db->insert($this->tb_feedback_reply, $feed);
     }
 
+    public function getthispwd($login_pwd,$salt){
+        return sha1($login_pwd . $salt);
+    }
 }
