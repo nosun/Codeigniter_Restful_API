@@ -160,11 +160,11 @@ Class Device_model extends CI_Model{
     }
 
     public function getNewVersion(){
-        return $this->db->from($this->tb_device_module_firmware)->order_by('firmware_version','desc')->limit(1)->get()->row();
+        return $this->db->from($this->tb_device_module_firmware)->order_by('version_code','desc')->limit(1)->get()->row();
     }
 
     public function getShare($product_id){
-        $query = $this->db->select('share_title,share_url,share_img,share_text')->get_where($this->tb_product.'_copy',array('product_id'=>$product_id));
+        $query = $this->db->select('share_title,share_url,share_img,share_text')->get_where($this->tb_product,array('product_id'=>$product_id));
         $result = $query->result_array();
         return $result;
     }

@@ -686,9 +686,7 @@ class Api_v1 extends REST_Controller
                 'temperature' =>$area_id[0]['temperature'],
                 'humidity' => $area_id[0]['humidity']
             );
-        }
-
-        else{
+        }else{
             if(!empty($district)){
                 $area_error = $this->api_model->chaxun_area_error("area_name = '$district'");
                 if(empty($area_error)){
@@ -720,13 +718,14 @@ class Api_v1 extends REST_Controller
 
     //新增用户反馈
     public function feedback_post(){
-        $user       = $this->getUserById($this->user_id);
-        $title      = $this->post('title');
-        $content    = $this->post('content');
-        $product_id = $this->post('product_id');
-        $category   = $this->post('category');
+        $user           = $this->getUserById($this->user_id);
+        $title          = $this->post('title');
+        $content        = $this->post('content');
+        $app_version    = $this->post('app_version');
+        $app_id         = $this->post('app_id');
+        $category       = $this->post('category');
 
-        if(empty($user) or empty($title) or empty($content) or empty($product_id) or empty($category)){
+        if(empty($user) or empty($title) or empty($content) or empty($app_version) or empty($app_id) or empty($category)){
             $this->response(array('message'=>400), 200);
         }
 
@@ -737,7 +736,9 @@ class Api_v1 extends REST_Controller
             'content'       => $content,
             'user_name'     => $user['user_name'],
             'category'      => $category,
-            'product_id'    => $product_id,
+            'app_version'   => $app_version,
+            'phone'         => $user['login_id'],
+            'app_id'        => $app_id,
             'status'        => '1'
         );
         if($this->user_model->getFeedback($feed)){
@@ -796,6 +797,8 @@ class Api_v1 extends REST_Controller
             if($newversion > $version){
                 $arr[]=array(
                     'id'=>$v->device_id,
+                    'firmware_version'=>$newversionarr->firmware_version,
+                    'firmware_update_intro'=>$newversionarr->firmware_update_intro,
                     'url'=>$newversionarr->firmware_w_url
                 );
             }

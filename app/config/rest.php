@@ -125,7 +125,7 @@ $config['auth_pass']= ['token_post','login_id_get','user_post',
 // limit check relation
 $config['limits_check_enable'] = TRUE;
 $config['limits_rate'] = 5;
-$config['limits_time'] = 8;
+$config['limits_time'] = 10;
 $config['limits_cache'] = 'redis';
 $config['limits_model'] = 'redis_model';
 $config['limits_pre'] = 'limit_';
